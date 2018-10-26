@@ -27,9 +27,11 @@ class PH1View {
     
     virtual void handlePrevButton();
 
-    virtual char* info();
+    virtual void clearTouch();
 
     bool needOSKeyboard;
+    bool needNewViewLoaded;
+    PH1View * newView;
   
     Adafruit_ILI9341* tft;
     

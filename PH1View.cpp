@@ -1,10 +1,12 @@
 #include "PH1View.h";
 
 PH1View::PH1View(){
+  needNewViewLoaded = false;
+  needOSKeyboard = false;
 }
 
 void PH1View::initialize(Adafruit_ILI9341 *ostft) {
-  Serial.print("test");
+  Serial.print("Initializing New View");
   tft = ostft;
 }
 
@@ -28,6 +30,6 @@ void PH1View::handlePrevButton(){
   
 }
 
-char* PH1View::info() {
-  return "Thing";
+void PH1View::clearTouch(){
+  
 }

@@ -9,7 +9,7 @@
 #include <Adafruit_ILI9341.h>
 #include "SoftwareSerial.h"
 #include "Adafruit_FONA.h"
-#include "TouchScreen.h"
+#include "./TouchScreen.h"
 #include "PH1Button.h"
 #include "PH1View.h"
 #include "HomeView.h"
@@ -34,6 +34,9 @@
 #define TS_MAXX 810
 #define TS_MAXY 850
 
+#define TOOLBAR_TOP 252
+#define INFO_BAR_HEIGHT 12
+
 #define BUTTON_X 0
 #define BUTTON_Y 12
 #define BUTTON_W 120
@@ -46,7 +49,6 @@
 #define COLOR_WHITE 0xFFFF
 
 PH1View *currentView;
-HomeView homeView;
 
 //char buttonlabels[6][9] = {"Phone", "Text", "Contacts", "Tools", "Books", "Other" };
 //PH1Button buttons[6];
@@ -54,7 +56,7 @@ HomeView homeView;
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
 
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 284);
 
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
@@ -66,25 +68,23 @@ int dimLCDAfter = 25000;
 int offLCDAfter = 30000;
 int toolbarUpdateAt = millis() + updateInterval;
 int lastActivity = millis();
+int lcdState;
+
+bool validTouchDetected = false;
+int noTouchCount = 0;
+
+int touchInterval = 250;
+int acceptNextTouchAt = millis();
 
 File root;
 
 void setup() {
   SPI.begin();
-  turnOnLCD();
   pinMode(SS, OUTPUT);
-//  digitalWrite(SS, HIGH);
-//  turnOffLCD();
 
-  tft.begin();
-  tft.setRotation(2);
-  tft.fillScreen(ILI9341_BLACK);
-
-  tft.setTextSize(4);
-  tft.setCursor(70, 120);
-  tft.setTextColor(ILI9341_RED);
-  tft.println("PH-1");
-
+  setupTFT();
+  drawLogo();
+  
   tft.setCursor(2, 200);
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(1);
@@ -124,11 +124,18 @@ void setup() {
   updateSignalStrength();
   updateDateAndTime();
 
-  currentView = &homeView;
+  currentView = new HomeView();
   currentView->initialize(&tft);
   currentView->onEnter();
 
-  tft.drawLine(0,12,width,12,ILI9341_WHITE);
+  tft.drawLine(0,INFO_BAR_HEIGHT,width,INFO_BAR_HEIGHT,ILI9341_WHITE);
+  tft.drawLine(0,TOOLBAR_TOP,width,TOOLBAR_TOP,ILI9341_WHITE);
+  tft.drawLine(0,319,width,319,ILI9341_WHITE);
+  tft.drawLine(239,TOOLBAR_TOP,239,319,ILI9341_WHITE);
+  tft.drawLine(0,TOOLBAR_TOP,0,319,ILI9341_WHITE);
+
+  tft.drawLine(80,TOOLBAR_TOP,80,319,ILI9341_WHITE);
+  tft.drawLine(160,TOOLBAR_TOP,160,319,ILI9341_WHITE);
 
 }
 
@@ -138,42 +145,92 @@ void loop() {
 
   p = ts.getPoint(); 
   
-  if(p.z < 200) 
-    p.z = -1;
-      
-  if (p.z != -1) {
+  if(p.x > 0 && p.y > 0 && p.z > 300) { 
+    // Touch Detected - Scale to screen coordinate space
     p.x = 240 - map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
     p.y = 320 + map(p.y, TS_MINY, TS_MAXY, 0, tft.height()) * -1;
-    Serial.print(p.z);
-  }
+
+    if(p.x < tft.width() && p.x > 0 && p.y < tft.height() && p.y > 0) {
+      // Valid Touchscreen Point Detected
+
+      if(millis() > acceptNextTouchAt) {
+        acceptNextTouchAt = millis() + touchInterval;
+        lastActivity = millis();
+        validTouchDetected = true;
+        noTouchCount = 0;
+        PH1View * newView;
   
-  tft.setCursor(0,300);
-  tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-  tft.setTextSize(1);
-    
+        if(p.y > INFO_BAR_HEIGHT && p.y < TOOLBAR_TOP) {
+          // Touch point was in the App Area - pass it along
+          currentView->handleTouch(p);
+        }
+        else {
+          Serial.println("Handling OS Touch at: ");
+          Serial.print(p.x);
+          Serial.print(p.y);
+          Serial.print(p.z);
+        }
+        
+      }
+
+    }
+  }
+//  else {
+//    noTouchCount ++;
+//    if(noTouchCount == 10) {
+//       currentView->clearTouch();
+//    }
+//  }
+  
   if(millis() > toolbarUpdateAt) {
     updateBatteryPercent();
     updateSignalStrength();
     updateDateAndTime();
     toolbarUpdateAt = millis() + updateInterval;
   }  
-    
-  if(millis() > lastActivity + dimLCDAfter) {
+
+  if(millis() > lastActivity + dimLCDAfter && lcdState == 1)
     setBrightness(20);
-  }
   
-  if(millis() > lastActivity + offLCDAfter) {
+  else if(millis() > lastActivity + offLCDAfter && lcdState == 2)
     turnOffLCD();
+  
+  if(validTouchDetected && lcdState != 1)
+    turnOnLCD();
+
+  if(currentView->needNewViewLoaded) {
+    loadView(currentView->newView);
   }
-//  if (Serial.available())
-//    fona.write(Serial.read());
-//  if (fona.available())
-//    Serial.write(fona.read());
+
+  if (Serial.available())
+    fona.write(Serial.read());
+  if (fona.available())
+    Serial.write(fona.read());
+}
+
+void setupTFT() {
+  tft.begin();
+  turnOnLCD();
+  tft.setRotation(2);
+  tft.fillScreen(ILI9341_BLACK);
+}
+
+void drawLogo() {
+  tft.setTextSize(4);
+  tft.setCursor(70, 120);
+  tft.setTextColor(ILI9341_RED);
+  tft.println("PH-1");
 }
 
 void loadView(PH1View *newView) {
+  Serial.println("Loading New View");
   currentView->onExit();
+  delete currentView;
+  tft.fillRect(0,INFO_BAR_HEIGHT,tft.width(),TOOLBAR_TOP-INFO_BAR_HEIGHT, ILI9341_BLACK);
+  newView->initialize(&tft);
   newView->onEnter();
+  newView->needNewViewLoaded = false;
+  currentView = newView;
 }
 
 void updateDateAndTime() {
@@ -239,14 +296,17 @@ void turnOffLCD() {
   pinMode(TFT_LITE, INPUT);
   pinMode(TFT_LITE, OUTPUT);
   digitalWrite(TFT_LITE, LOW);
+  lcdState = 0;
 }
 
 void turnOnLCD() {
   pinMode(TFT_LITE, OUTPUT);
   digitalWrite(TFT_LITE, HIGH);
+  lcdState = 1;
 }
 
 void setBrightness(int percent) {
   pinMode(TFT_LITE, OUTPUT);
-//  analogWrite(TFT_LITE, percent);
+  lcdState = 2;
+  analogWrite(TFT_LITE, percent);
 }

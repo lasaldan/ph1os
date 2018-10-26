@@ -1,7 +1,6 @@
 #include "HomeView.h";
 
 HomeView::HomeView(){
-  
 }
 
 void HomeView::onEnter() {
@@ -26,20 +25,23 @@ void HomeView::onExit() {
 }
 
 void HomeView::handleTouch(TSPoint p) {
+  if(buttons[0].contains(p.x, p.y)) {
+    Serial.println("Phone");
+    newView = new PhoneView();
+    needNewViewLoaded = true;
+  }
+    
   
+
 //  for (uint8_t b=0; b<6; b++) {
 //    if (buttons[b].contains(p.x, p.y)) {
 //      buttons[b].press(true);  // tell the button it is pressed
-//      tft.print("Pressed");
-//      tft.print(buttons[b].getLabel());
-//      tft.print("        ");
 //    } else {
 //      buttons[b].press(false);  // tell the button it is NOT pressed
 //    }
 //  }
-
-
-//  for (uint8_t b=0; b<1; b++) {
+//
+//  for (uint8_t b=0; b<6; b++) {
 //    if (buttons[b].justReleased()) {
 //      buttons[b].drawButton();  // draw normal
 //    }
@@ -49,15 +51,16 @@ void HomeView::handleTouch(TSPoint p) {
 //    }
 //  }
   
+}
 
+void HomeView::clearTouch() {
+//  for (uint8_t b=0; b<6; b++) {
+//    buttons[b].drawButton();
+//  }
 }
 
 void HomeView::handleNextButton() {
 }
 
 void HomeView::handlePrevButton() {
-}
-
-char* HomeView::info() {
-  return "HVThing";
 }

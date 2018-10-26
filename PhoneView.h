@@ -1,16 +1,14 @@
 #include "PH1View.h";
 #include "PH1Button.h";
-#include "PhoneView.h";
 
-#ifndef HomeView_h
-#define HomeView_h
+#ifndef PhoneView_h
+#define PhoneView_h
 
-class HomeView : public PH1View {
+class PhoneView : public PH1View {
   
   public:
   
-    HomeView();
-    PhoneView phoneView;
+    PhoneView();
 
     void onEnter();
 
@@ -24,6 +22,9 @@ class HomeView : public PH1View {
 
     void clearTouch();
 
+    bool needOSKeyboard;
+
+    char* info();
 
     PH1Button buttons[6];
 };
