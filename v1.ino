@@ -4,11 +4,12 @@
  */
  
 #include <SPI.h>
-#include <SD.h>
+#include <Wire.h>      // this is needed even tho we aren't using it
+//#include <SD.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include "SoftwareSerial.h"
-#include "Adafruit_FONA.h"
+#include "./SoftwareSerial.h"
+#include "./Adafruit_FONA.h"
 #include "./TouchScreen.h"
 #include "PH1Button.h"
 #include "PH1View.h"
@@ -34,16 +35,9 @@
 #define TS_MAXX 810
 #define TS_MAXY 850
 
-#define TOOLBAR_TOP 252
-#define INFO_BAR_HEIGHT 12
-
-#define BUTTON_X 0
-#define BUTTON_Y 12
-#define BUTTON_W 120
-#define BUTTON_H 80
-#define BUTTON_SPACING_X 0
-#define BUTTON_SPACING_Y 0
-#define BUTTON_TEXTSIZE 1
+#define TOOLBAR_TOP 284
+#define INFO_BAR_HEIGHT 10
+#define TITLE_BAR_HEIGHT 10
 
 #define COLOR_BLACK 0x0000
 #define COLOR_WHITE 0xFFFF
@@ -54,7 +48,7 @@ PH1View *currentView;
 //PH1Button buttons[6];
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
-SoftwareSerial *fonaSerial = &fonaSS;
+//SoftwareSerial *fonaSerial = &fonaSS;
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 284);
 
@@ -76,9 +70,11 @@ int noTouchCount = 0;
 int touchInterval = 250;
 int acceptNextTouchAt = millis();
 
-File root;
+//File root;
 
 void setup() {
+//  while (!Serial);
+//  Serial.begin(115200);
   SPI.begin();
   pinMode(SS, OUTPUT);
 
@@ -114,29 +110,38 @@ void setup() {
 //  root.close();
   
   tft.println("Communicating with Cellular Hardware...");
-  fonaSerial->begin(4800);
-  if (! fona.begin(*fonaSerial)) {
+  fonaSS.begin(4800);
+  if (! fona.begin(fonaSS)) {
     while (1);
   }
+  fona.setAudio(FONA_EXTAUDIO);
   tft.println("Done.");
+//  char numbers[12] = "18013581600";
+//  numbers[12] = '\0';
+//
+//  fona.callPhone(numbers);
+//  tft.println("Dones.");
+
+//  if (!fona.callPhone("18013581600")) {
+//    Serial.println(F("Failed calling"));
+//  } else {
+//    Serial.println(F("Calling ..."));
+//  } 
+
+      
 
   updateBatteryPercent();
   updateSignalStrength();
   updateDateAndTime();
 
   currentView = new HomeView();
-  currentView->initialize(&tft);
+  clearLayout();
+  updateTitleBar();
+  currentView->initialize(&tft, &fona);
   currentView->onEnter();
 
   tft.drawLine(0,INFO_BAR_HEIGHT,width,INFO_BAR_HEIGHT,ILI9341_WHITE);
-  tft.drawLine(0,TOOLBAR_TOP,width,TOOLBAR_TOP,ILI9341_WHITE);
-  tft.drawLine(0,319,width,319,ILI9341_WHITE);
-  tft.drawLine(239,TOOLBAR_TOP,239,319,ILI9341_WHITE);
-  tft.drawLine(0,TOOLBAR_TOP,0,319,ILI9341_WHITE);
-
-  tft.drawLine(80,TOOLBAR_TOP,80,319,ILI9341_WHITE);
-  tft.drawLine(160,TOOLBAR_TOP,160,319,ILI9341_WHITE);
-
+  drawToolbar(TOOLBAR_TOP);
 }
 
 void loop() {
@@ -153,6 +158,8 @@ void loop() {
     if(p.x < tft.width() && p.x > 0 && p.y < tft.height() && p.y > 0) {
       // Valid Touchscreen Point Detected
 
+//      fonaSS.println("ATD18013581600;");
+
       if(millis() > acceptNextTouchAt) {
         acceptNextTouchAt = millis() + touchInterval;
         lastActivity = millis();
@@ -160,15 +167,23 @@ void loop() {
         noTouchCount = 0;
         PH1View * newView;
   
-        if(p.y > INFO_BAR_HEIGHT && p.y < TOOLBAR_TOP) {
+        if(p.y > INFO_BAR_HEIGHT + TITLE_BAR_HEIGHT && p.y < TOOLBAR_TOP) {
           // Touch point was in the App Area - pass it along
           currentView->handleTouch(p);
         }
         else {
-          Serial.println("Handling OS Touch at: ");
-          Serial.print(p.x);
-          Serial.print(p.y);
-          Serial.print(p.z);
+          if(p.y > TOOLBAR_TOP) {
+            if(p.x < 80) {
+              currentView->handlePrevButton();
+            }
+            else if(p.x > 160) {
+              currentView->handleNextButton();
+            }
+            else {
+              currentView->newView = new HomeView();
+              currentView->needNewViewLoaded = true;
+            }
+          }
         }
         
       }
@@ -202,10 +217,12 @@ void loop() {
     loadView(currentView->newView);
   }
 
-  if (Serial.available())
-    fona.write(Serial.read());
-  if (fona.available())
-    Serial.write(fona.read());
+//  if (Serial.available())
+//    fona.write(Serial.read());
+//  if (fona.available())
+//    Serial.write(fona.read());
+
+   validTouchDetected = false;
 }
 
 void setupTFT() {
@@ -226,11 +243,17 @@ void loadView(PH1View *newView) {
   Serial.println("Loading New View");
   currentView->onExit();
   delete currentView;
-  tft.fillRect(0,INFO_BAR_HEIGHT,tft.width(),TOOLBAR_TOP-INFO_BAR_HEIGHT, ILI9341_BLACK);
-  newView->initialize(&tft);
+  clearLayout();
+  newView->initialize(&tft, &fona);
   newView->onEnter();
   newView->needNewViewLoaded = false;
   currentView = newView;
+  updateTitleBar();
+}
+
+void clearLayout() {
+  tft.fillRect(0,INFO_BAR_HEIGHT+TITLE_BAR_HEIGHT,tft.width(),TOOLBAR_TOP-INFO_BAR_HEIGHT-TITLE_BAR_HEIGHT-1, ILI9341_BLACK);
+  tft.fillRect(0,INFO_BAR_HEIGHT,tft.width(),TITLE_BAR_HEIGHT,ILI9341_WHITE);
 }
 
 void updateDateAndTime() {
@@ -242,7 +265,7 @@ void updateDateAndTime() {
   char minute[3];
   
   fona.getTime(buffer, 23);
-  tft.setCursor(140, 2);
+  tft.setCursor(140, 1);
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);  
   tft.setTextSize(1);
   
@@ -264,16 +287,60 @@ void updateDateAndTime() {
   tft.print(F("/"));
   tft.print(F(day));
 
-  tft.setCursor(210, 2);
+  tft.setCursor(210, 1);
   tft.print(F(hour));
   tft.print(F(":"));
   tft.print(F(minute));
 }
 
+void drawToolbar(int y) {
+  tft.drawLine(0,y,width,y,ILI9341_WHITE);
+  tft.drawLine(0,y+1,width,y+1,ILI9341_WHITE);
+  tft.drawLine(0,tft.height()-1,width,tft.height()-1,ILI9341_WHITE);
+  tft.drawLine(tft.width()-1,y,tft.width()-1,tft.height()-1,ILI9341_WHITE);
+  tft.drawLine(0,y,0,tft.height()-1,ILI9341_WHITE);
+
+  tft.drawLine(80,y,80,319,ILI9341_WHITE);
+  tft.drawLine(160,y,160,319,ILI9341_WHITE);
+
+  // 'Left', 15x24px
+  const unsigned char left [] PROGMEM = {
+    0x00, 0x1c, 0x00, 0x3e, 0x00, 0x7e, 0x00, 0xfe, 0x01, 0xfc, 0x03, 0xf8, 0x07, 0xf0, 0x0f, 0xe0, 
+    0x1f, 0xc0, 0x3f, 0x80, 0x7f, 0x00, 0xfe, 0x00, 0xfe, 0x00, 0x7f, 0x00, 0x3f, 0x80, 0x1f, 0xc0, 
+    0x0f, 0xe0, 0x07, 0xf0, 0x03, 0xf8, 0x01, 0xfc, 0x00, 0xfe, 0x00, 0x7e, 0x00, 0x3e, 0x00, 0x1c
+  };
+  // 'Right', 15x24px
+  const unsigned char right [] PROGMEM = {
+    0x70, 0x00, 0xf8, 0x00, 0xfc, 0x00, 0xfe, 0x00, 0x7f, 0x00, 0x3f, 0x80, 0x1f, 0xc0, 0x0f, 0xe0, 
+    0x07, 0xf0, 0x03, 0xf8, 0x01, 0xfc, 0x00, 0xfe, 0x00, 0xfe, 0x01, 0xfc, 0x03, 0xf8, 0x07, 0xf0, 
+    0x0f, 0xe0, 0x1f, 0xc0, 0x3f, 0x80, 0x7f, 0x00, 0xfe, 0x00, 0xfc, 0x00, 0xf8, 0x00, 0x70, 0x00
+  };
+  // 'home', 24x24px
+  const unsigned char homeicon [] PROGMEM = {
+    0x00, 0x18, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x7e, 0x00, 0x00, 0xff, 0x00, 0x01, 0xff, 0x80, 0x03, 
+    0xff, 0xc0, 0x07, 0xff, 0xe0, 0x0f, 0xff, 0xf0, 0x1f, 0xff, 0xf8, 0x3f, 0xff, 0xfc, 0x7f, 0xff, 
+    0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x3f, 0xff, 0xfc, 0x3f, 0xff, 0xfc, 0x3f, 0xc3, 0xfc, 
+    0x3f, 0xc3, 0xfc, 0x3f, 0xc3, 0xfc, 0x3f, 0xc3, 0xfc, 0x3f, 0xc3, 0xfc, 0x3f, 0xc3, 0xfc, 0x3f, 
+    0xc3, 0xfc, 0x3f, 0xc3, 0xfc, 0x1f, 0x81, 0xf8
+  };
+
+
+  tft.drawBitmap(32, 290, left, 15, 24, ILI9341_WHITE);
+  tft.drawBitmap(192, 290, right, 15, 24, ILI9341_WHITE);
+  tft.drawBitmap(108, 290, homeicon, 24, 24, ILI9341_WHITE);
+
+}
+
+void updateTitleBar() {
+  tft.setCursor(tft.width()/2 - (strlen(currentView->title) * 3), INFO_BAR_HEIGHT+1);
+  tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
+  tft.print(currentView->title);
+}
+
 void updateSignalStrength() {
   uint16_t strength;
   strength = fona.getRSSI();
-  tft.setCursor(70, 2);
+  tft.setCursor(70, 1);
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);  
   tft.setTextSize(1);
   tft.print("Sig:");
@@ -284,7 +351,7 @@ void updateSignalStrength() {
 void updateBatteryPercent() {
   uint16_t percent;
   fona.getBattPercent(&percent);
-  tft.setCursor(2, 2);
+  tft.setCursor(2, 1);
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);  
   tft.setTextSize(1);
   tft.print("Bat:");

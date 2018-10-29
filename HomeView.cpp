@@ -6,12 +6,16 @@ HomeView::HomeView(){
 void HomeView::onEnter() {
   char buttonlabels[6][9] = {"Phone", "Text", "Contacts", "Tools", "Books", "Other" };
 
-  buttons[0].initButton(tft, 0, 12, 121, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[0], 1);
-  buttons[1].initButton(tft, 120, 12, 120, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[1], 1);
-  buttons[2].initButton(tft, 0, 91, 121, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[2], 1);
-  buttons[3].initButton(tft, 120, 91, 120, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[3], 1);
-  buttons[4].initButton(tft, 0, 170, 121, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[4], 1);
-  buttons[5].initButton(tft, 120, 170, 120, 80, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[5], 1);
+  int buttonHeight = VIEW_HEIGHT / 3;
+
+  buttons[0].initButton(tft, 0, VIEW_TOP, 121, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[0], 1);
+  buttons[1].initButton(tft, 120, VIEW_TOP, 120, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[1], 1);
+  
+  buttons[2].initButton(tft, 0, VIEW_TOP+buttonHeight, 121, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[2], 1);
+  buttons[3].initButton(tft, 120, VIEW_TOP+buttonHeight, 120, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[3], 1);
+  
+  buttons[4].initButton(tft, 0, VIEW_TOP+buttonHeight*2, 121, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[4], 1);
+  buttons[5].initButton(tft, 120, VIEW_TOP+buttonHeight*2, 120, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, buttonlabels[5], 1);
 
   buttons[0].drawButton();
   buttons[1].drawButton();
@@ -26,7 +30,6 @@ void HomeView::onExit() {
 
 void HomeView::handleTouch(TSPoint p) {
   if(buttons[0].contains(p.x, p.y)) {
-    Serial.println("Phone");
     newView = new PhoneView();
     needNewViewLoaded = true;
   }

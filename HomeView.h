@@ -10,7 +10,6 @@ class HomeView : public PH1View {
   public:
   
     HomeView();
-    PhoneView phoneView;
 
     void onEnter();
 
@@ -23,7 +22,6 @@ class HomeView : public PH1View {
     void handlePrevButton();
 
     void clearTouch();
-
 
     PH1Button buttons[6];
 };

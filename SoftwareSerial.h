@@ -78,7 +78,7 @@ public:
   void begin(long speed);
   bool listen();
   void end();
-  bool isListening() { return this == active_object; }
+  bool isListening() { Serial.print("here1"); return this == active_object; }
   bool stopListening();
   bool overflow() { bool ret = _buffer_overflow; if (ret) _buffer_overflow = false; return ret; }
   int peek();

@@ -1,14 +1,14 @@
 #include "PH1View.h";
 #include "PH1Button.h";
 
-#ifndef PhoneView_h
-#define PhoneView_h
+#ifndef CallView_h
+#define CallView_h
 
-class PhoneView : public PH1View {
+class CallView : public PH1View {
   
   public:
   
-    PhoneView();
+    CallView( char*,  char*);
 
     void onEnter();
 
@@ -25,8 +25,9 @@ class PhoneView : public PH1View {
     bool needOSKeyboard;
 
     char* info();
-    
-    PH1Button buttons[6];
+
+    char* calleeName;
+    char* calleeNumber;
 
 };
 
