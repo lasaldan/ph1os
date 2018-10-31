@@ -26,8 +26,8 @@ class CallView : public PH1View {
 
     char* info();
 
-    char* calleeName;
-    char* calleeNumber;
+    char calleeName[31];
+    char calleeNumber[12];
 
 };
 

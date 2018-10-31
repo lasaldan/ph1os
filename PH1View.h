@@ -2,8 +2,8 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-//#include "SoftwareSerial.h"
-#include "Adafruit_FONA.h"
+#include "SoftwareSerial.h"
+//#include "Adafruit_FONA.h"
 #include "TouchScreen.h"
 
 #ifndef PH1View_h
@@ -20,7 +20,7 @@ class PH1View {
   
     PH1View();
 
-    void initialize(Adafruit_ILI9341*, Adafruit_FONA*);
+    void initialize(Adafruit_ILI9341*, SoftwareSerial*);
 
     virtual void onEnter();
 
@@ -34,7 +34,12 @@ class PH1View {
 
     virtual void clearTouch();
 
+    virtual void handleInput(char*);
+
     bool needOSKeyboard;
+    bool needOSKeyboardClosed;
+    bool needOSNumpad;
+    bool needOSNumpadClosed;
     bool needNewViewLoaded;
     PH1View * newView;
     char* title;
@@ -43,7 +48,7 @@ class PH1View {
     const int VIEW_HEIGHT = 264;
   
     Adafruit_ILI9341* tft;
-    Adafruit_FONA* fona;
+    SoftwareSerial* fonaSS;
 
     void flushSerial();
 

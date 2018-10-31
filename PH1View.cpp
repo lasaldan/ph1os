@@ -3,12 +3,13 @@
 PH1View::PH1View(){
   needNewViewLoaded = false;
   needOSKeyboard = false;
+  needOSNumpad = false;
   title = "Home";
 }
 
-void PH1View::initialize(Adafruit_ILI9341 *ostft, Adafruit_FONA *osfona) {
-  tft = ostft;
-  fona = osfona;
+void PH1View::initialize(Adafruit_ILI9341 *os_tft, SoftwareSerial *os_fonaSS) {
+  tft = os_tft;
+  fonaSS = os_fonaSS;
 }
 
 void PH1View::onEnter(){
@@ -32,6 +33,10 @@ void PH1View::handlePrevButton(){
 }
 
 void PH1View::clearTouch(){
+  
+}
+
+void PH1View::handleInput(char*) {
   
 }
 //

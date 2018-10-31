@@ -1,53 +1,43 @@
 #include "CallView.h";
-#include "CallView.h";
+#include "PhoneView.h";
 
 CallView::CallView( char* number,  char* destName){
-//  Serial.println("Constructing");
-//  strcpy(calleeName, destName);
-  Serial.println(number);
-//  strcpy(calleeNumber, number);
-  Serial.println(destName);
+  strcpy(calleeName, destName);
+  strcpy(calleeNumber, number);
+
   title = "Calling ";
-//  strcat(title, number);
-//  Serial.println("Constructed");
-//  flushSerial();
-//  Serial.print(F("Call #"));
-  //readline(number, 30);
-//  Serial.println();
-  //Serial.print(F("Calling ")); Serial.println(number);
 
-//  char sendbuff[35] = "ATD";
-//  strncpy(sendbuff+3, number, min(30, (int)strlen(number)));
-//  uint8_t x = strlen(sendbuff);
-//  sendbuff[x] = ';';
-//  sendbuff[x+1] = 0;
-//  Serial.println("Sending:");
-//  Serial.println(sendbuff);
-//  fonaSerial->println(sendbuff);
-//  fona->callPhone(number);
-//  Serial.println("Sent to fona");
-  char numbers[12] = "18013581600";
-  numbers[12] = '\0';
-
-  if (!fona->callPhone(numbers)) {
-    Serial.println("Failed");
-  } else {
-    Serial.println("Sent!");
-  }
 }
 
 void CallView::onEnter() {
-//  char number[30];
-//  flushSerial();
-//  Serial.print(F("Call #"));
-//  readline(number, 30);
-//  Serial.println();
-//  Serial.print(F("Calling ")); Serial.println(number);
-//  if (!fona.callPhone(number)) {
-//    Serial.println(F("Failed"));
-//  } else {
-//    Serial.println(F("Sent!"));
-//  }
+  
+  char atString[16] = "ATD";
+  strncpy(atString+3, calleeNumber, min(11, (int)strlen(calleeNumber)));
+  uint8_t x = strlen(atString);
+  atString[x] = ';';
+  atString[x+1] = 0;
+
+
+  tft->setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+
+  tft->setTextSize(2);
+  
+  tft->setCursor(tft->width()/2 - (strlen(calleeName) * 3 * 2), 50);
+//  tft->setCursor(30, 50);
+  
+  if(strlen(calleeName) > 0)
+    tft->print(calleeName);
+  else
+    tft->print("Unknown Contact");
+    
+  tft->setTextSize(2);
+  tft->setCursor(30, 150);
+  tft->print("Dialing...");
+
+  
+  fonaSS->println(atString);
+  
+  
 }
 
 void CallView::onExit() {
@@ -62,7 +52,11 @@ void CallView::clearTouch() {
 }
 
 void CallView::handleNextButton() {
+  fonaSS->println("ATH");
 }
 
 void CallView::handlePrevButton() {
+  fonaSS->println("ATH");
+  newView = new PhoneView();
+  needNewViewLoaded = true;
 }

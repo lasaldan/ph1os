@@ -36,6 +36,7 @@
 #define TS_MAXY 850
 
 #define TOOLBAR_TOP 284
+#define NUMPAD_TOP 170
 #define INFO_BAR_HEIGHT 10
 #define TITLE_BAR_HEIGHT 10
 
@@ -43,6 +44,12 @@
 #define COLOR_WHITE 0xFFFF
 
 PH1View *currentView;
+bool numpadOpen = false;
+char numpadButtonLabels[12][4] = {"1","2","3","4","5","6","7","8","9","CLR","0","DEL"};
+
+PH1Button numpadButtons[12]; 
+
+int appBottom = TOOLBAR_TOP;
 
 //char buttonlabels[6][9] = {"Phone", "Text", "Contacts", "Tools", "Books", "Other" };
 //PH1Button buttons[6];
@@ -136,12 +143,15 @@ void setup() {
 
   currentView = new HomeView();
   clearLayout();
-  updateTitleBar();
-  currentView->initialize(&tft, &fona);
+  updateTitleBar(currentView->title);
+  currentView->initialize(&tft, &fonaSS);
   currentView->onEnter();
+
 
   tft.drawLine(0,INFO_BAR_HEIGHT,width,INFO_BAR_HEIGHT,ILI9341_WHITE);
   drawToolbar(TOOLBAR_TOP);
+  
+//  enableNumpad();
 }
 
 void loop() {
@@ -157,8 +167,7 @@ void loop() {
 
     if(p.x < tft.width() && p.x > 0 && p.y < tft.height() && p.y > 0) {
       // Valid Touchscreen Point Detected
-
-//      fonaSS.println("ATD18013581600;");
+      
 
       if(millis() > acceptNextTouchAt) {
         acceptNextTouchAt = millis() + touchInterval;
@@ -166,28 +175,39 @@ void loop() {
         validTouchDetected = true;
         noTouchCount = 0;
         PH1View * newView;
-  
-        if(p.y > INFO_BAR_HEIGHT + TITLE_BAR_HEIGHT && p.y < TOOLBAR_TOP) {
+
+        if(numpadOpen) {
+          for(int i = 0; i < 12; i ++) {
+            if(numpadButtons[i].contains(p.x, p.y)) {
+              currentView->handleInput(numpadButtonLabels[i]);
+            }
+          }
+        }
+
+        if(p.y > INFO_BAR_HEIGHT + TITLE_BAR_HEIGHT && p.y < appBottom) {
           // Touch point was in the App Area - pass it along
           currentView->handleTouch(p);
         }
         else {
-          if(p.y > TOOLBAR_TOP) {
-            if(p.x < 80) {
-              currentView->handlePrevButton();
-            }
-            else if(p.x > 160) {
-              currentView->handleNextButton();
-            }
-            else {
-              currentView->newView = new HomeView();
-              currentView->needNewViewLoaded = true;
+          if(numpadOpen) {
+            
+          }
+          else {
+            if(p.y > appBottom && p.y < appBottom + 30) {
+              if(p.x < 80) {
+                currentView->handlePrevButton();
+              }
+              else if(p.x > 160) {
+                currentView->handleNextButton();
+              }
+              else {
+                currentView->newView = new HomeView();
+                currentView->needNewViewLoaded = true;
+              }
             }
           }
         }
-        
       }
-
     }
   }
 //  else {
@@ -213,9 +233,18 @@ void loop() {
   if(validTouchDetected && lcdState != 1)
     turnOnLCD();
 
+  if(currentView->needOSNumpad && !numpadOpen) {
+    enableNumpad();
+  }
+
+  if(!currentView->needOSNumpad && numpadOpen) {
+    disableNumpad();
+  }
+
   if(currentView->needNewViewLoaded) {
     loadView(currentView->newView);
   }
+
 
 //  if (Serial.available())
 //    fona.write(Serial.read());
@@ -223,6 +252,28 @@ void loop() {
 //    Serial.write(fona.read());
 
    validTouchDetected = false;
+}
+
+void disableNumpad() {
+  
+}
+
+void enableNumpad() {
+  
+  int buttonHeight = 30;
+  int numpadTop = tft.height() - buttonHeight * 4;
+  
+  for(int i = 0; i < 12; i++) {
+    int row = i / 3;
+    int col = i % 3;
+    numpadButtons[i].initButton(&tft, 80*col, numpadTop+buttonHeight*row, 80, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, numpadButtonLabels[i], 1);
+    numpadButtons[i].drawButton();
+  }
+  currentView->needOSNumpad = false;
+  numpadOpen = true;
+  
+  appBottom = NUMPAD_TOP;
+  drawToolbar(NUMPAD_TOP);
 }
 
 void setupTFT() {
@@ -244,11 +295,11 @@ void loadView(PH1View *newView) {
   currentView->onExit();
   delete currentView;
   clearLayout();
-  newView->initialize(&tft, &fona);
+  newView->initialize(&tft, &fonaSS);
+  updateTitleBar(newView->title);
   newView->onEnter();
   newView->needNewViewLoaded = false;
   currentView = newView;
-  updateTitleBar();
 }
 
 void clearLayout() {
@@ -325,16 +376,16 @@ void drawToolbar(int y) {
   };
 
 
-  tft.drawBitmap(32, 290, left, 15, 24, ILI9341_WHITE);
-  tft.drawBitmap(192, 290, right, 15, 24, ILI9341_WHITE);
-  tft.drawBitmap(108, 290, homeicon, 24, 24, ILI9341_WHITE);
+  tft.drawBitmap(32, y+4, left, 15, 24, ILI9341_WHITE);
+  tft.drawBitmap(192, y+4, right, 15, 24, ILI9341_WHITE);
+  tft.drawBitmap(108, y+4, homeicon, 24, 24, ILI9341_WHITE);
 
 }
 
-void updateTitleBar() {
-  tft.setCursor(tft.width()/2 - (strlen(currentView->title) * 3), INFO_BAR_HEIGHT+1);
+void updateTitleBar(char*title) {
+  tft.setCursor(tft.width()/2 - (strlen(title) * 3), INFO_BAR_HEIGHT+1);
   tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
-  tft.print(currentView->title);
+  tft.print(title);
 }
 
 void updateSignalStrength() {
