@@ -35,6 +35,9 @@ class PhoneView : public PH1View {
     char textfield[12];
     uint8_t textfield_i=0;
 
+    enum State { Favorites, Dialing };
+    State state;
+
 };
 
 #endif

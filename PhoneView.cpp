@@ -4,6 +4,7 @@
 
 PhoneView::PhoneView(){
   title = "Phone";
+  state = Favorites;
 }
 
 void PhoneView::onEnter() {
@@ -28,17 +29,20 @@ void PhoneView::onExit() {
 }
 
 void PhoneView::handleTouch(TSPoint p) {
-  for(int i = 0; i < 5; i++) {
-    if(buttons[i].contains(p.x, p.y)) {
-      newView = new CallView(favoriteContactNumbers[i], favoriteContactNames[i]);
-      needNewViewLoaded = true;
+  if(state == Favorites) {
+    for(int i = 0; i < 5; i++) {
+      if(buttons[i].contains(p.x, p.y)) {
+        newView = new CallView(favoriteContactNumbers[i], favoriteContactNames[i]);
+        needNewViewLoaded = true;
+      }
     }
-  }
-  
-  if(buttons[5].contains(p.x, p.y)) {
-    tft->fillRect(0, 20, tft->width(), 200, ILI9341_BLACK);
-    tft->drawRect(10, 30, 220, 50, ILI9341_WHITE);
-    needOSNumpad = true;
+
+    if(buttons[5].contains(p.x, p.y)) {
+      tft->fillRect(0, 20, tft->width(), 200, ILI9341_BLACK);
+      tft->drawRect(10, 30, 220, 50, ILI9341_WHITE);
+      needOSNumpad = true;
+      state = Dialing;
+    }
   }
 }
 
@@ -74,9 +78,22 @@ void PhoneView::clearTouch() {
 }
 
 void PhoneView::handleNextButton() {
+  if(state == Dialing) {
+    newView = new CallView(textfield, "New Contact");
+    needNewViewLoaded = true;
+  }
 }
 
 void PhoneView::handlePrevButton() {
+  if(state == Dialing) {
+    needOSNumpad = false;
+    textfield[0] = 0;
+    textfield_i = 0;
+    onEnter();
+    state = Favorites;
+  }
+  else {
     newView = new HomeView();
     needNewViewLoaded = true;
+  }
 }

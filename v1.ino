@@ -35,7 +35,8 @@
 #define TS_MAXX 810
 #define TS_MAXY 850
 
-#define TOOLBAR_TOP 284
+#define TOOLBAR_TOP 290
+#define TOOLBAR_HEIGHT 30
 #define NUMPAD_TOP 170
 #define INFO_BAR_HEIGHT 10
 #define TITLE_BAR_HEIGHT 10
@@ -188,23 +189,16 @@ void loop() {
           // Touch point was in the App Area - pass it along
           currentView->handleTouch(p);
         }
-        else {
-          if(numpadOpen) {
-            
+        else if(p.y > appBottom && p.y < appBottom + 30) {
+          if(p.x < 80) {
+            currentView->handlePrevButton();
+          }
+          else if(p.x > 160) {
+            currentView->handleNextButton();
           }
           else {
-            if(p.y > appBottom && p.y < appBottom + 30) {
-              if(p.x < 80) {
-                currentView->handlePrevButton();
-              }
-              else if(p.x > 160) {
-                currentView->handleNextButton();
-              }
-              else {
-                currentView->newView = new HomeView();
-                currentView->needNewViewLoaded = true;
-              }
-            }
+            currentView->newView = new HomeView();
+            currentView->needNewViewLoaded = true;
           }
         }
       }
@@ -233,11 +227,11 @@ void loop() {
   if(validTouchDetected && lcdState != 1)
     turnOnLCD();
 
-  if(currentView->needOSNumpad && !numpadOpen) {
+  if((currentView->needOSNumpad) && !numpadOpen) {
     enableNumpad();
   }
 
-  if(!currentView->needOSNumpad && numpadOpen) {
+  if(!(currentView->needOSNumpad) && numpadOpen) {
     disableNumpad();
   }
 
@@ -255,7 +249,9 @@ void loop() {
 }
 
 void disableNumpad() {
-  
+  appBottom = TOOLBAR_TOP;
+  numpadOpen = false;
+  drawToolbar(TOOLBAR_TOP);
 }
 
 void enableNumpad() {
@@ -269,7 +265,7 @@ void enableNumpad() {
     numpadButtons[i].initButton(&tft, 80*col, numpadTop+buttonHeight*row, 80, buttonHeight, COLOR_WHITE, COLOR_BLACK, COLOR_WHITE, numpadButtonLabels[i], 1);
     numpadButtons[i].drawButton();
   }
-  currentView->needOSNumpad = false;
+  
   numpadOpen = true;
   
   appBottom = NUMPAD_TOP;
@@ -291,15 +287,18 @@ void drawLogo() {
 }
 
 void loadView(PH1View *newView) {
-  Serial.println("Loading New View");
   currentView->onExit();
   delete currentView;
   clearLayout();
   newView->initialize(&tft, &fonaSS);
   updateTitleBar(newView->title);
+  drawToolbar(TOOLBAR_TOP);
   newView->onEnter();
   newView->needNewViewLoaded = false;
   currentView = newView;
+  
+  appBottom = TOOLBAR_TOP;
+  numpadOpen = false;
 }
 
 void clearLayout() {
@@ -345,14 +344,15 @@ void updateDateAndTime() {
 }
 
 void drawToolbar(int y) {
+  tft.fillRect(1,y+1,tft.width()-2, TOOLBAR_HEIGHT-2, ILI9341_BLACK);
   tft.drawLine(0,y,width,y,ILI9341_WHITE);
   tft.drawLine(0,y+1,width,y+1,ILI9341_WHITE);
-  tft.drawLine(0,tft.height()-1,width,tft.height()-1,ILI9341_WHITE);
-  tft.drawLine(tft.width()-1,y,tft.width()-1,tft.height()-1,ILI9341_WHITE);
-  tft.drawLine(0,y,0,tft.height()-1,ILI9341_WHITE);
+  tft.drawLine(0,y+TOOLBAR_HEIGHT-1,width,y+TOOLBAR_HEIGHT-1,ILI9341_WHITE);
+  tft.drawLine(tft.width()-1,y,tft.width()-1,y+TOOLBAR_HEIGHT-1,ILI9341_WHITE);
+  tft.drawLine(0,y,0,y+TOOLBAR_HEIGHT-1,ILI9341_WHITE);
 
-  tft.drawLine(80,y,80,319,ILI9341_WHITE);
-  tft.drawLine(160,y,160,319,ILI9341_WHITE);
+  tft.drawLine(80,y,80,y + TOOLBAR_HEIGHT,ILI9341_WHITE);
+  tft.drawLine(160,y,160,y + TOOLBAR_HEIGHT,ILI9341_WHITE);
 
   // 'Left', 15x24px
   const unsigned char left [] PROGMEM = {
@@ -383,6 +383,7 @@ void drawToolbar(int y) {
 }
 
 void updateTitleBar(char*title) {
+  tft.setTextSize(1);
   tft.setCursor(tft.width()/2 - (strlen(title) * 3), INFO_BAR_HEIGHT+1);
   tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
   tft.print(title);

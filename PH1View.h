@@ -44,8 +44,8 @@ class PH1View {
     PH1View * newView;
     char* title;
     const int VIEW_TOP = 20;
-    const int VIEW_BOTTOM = 284;
-    const int VIEW_HEIGHT = 264;
+    const int VIEW_BOTTOM = 290;
+    const int VIEW_HEIGHT = 270;
   
     Adafruit_ILI9341* tft;
     SoftwareSerial* fonaSS;
