@@ -55,6 +55,9 @@ int appBottom = TOOLBAR_TOP;
 //char buttonlabels[6][9] = {"Phone", "Text", "Contacts", "Tools", "Books", "Other" };
 //PH1Button buttons[6];
 
+char receivedChars[50];
+int receivedChars_i = 0;
+
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 //SoftwareSerial *fonaSerial = &fonaSS;
 
@@ -239,6 +242,27 @@ void loop() {
     loadView(currentView->newView);
   }
 
+//  if (fona.available())
+//    Serial.write(fona.read());
+
+  char c;
+
+  while (fona.available()) {
+    // we have pending communication, read what's coming
+    c = fona.read(); // returns -1 if error
+    if (c != -1) { // if this is not an error print what we've got
+      if (c == '\n' || c == '\r') parseSerialInput(); // code 0x0A
+//      else if (c == '\r') Serial.println("[CR]"); // code 0x0D
+      else {
+        receivedChars[receivedChars_i] = c;
+        receivedChars_i ++;
+        receivedChars[receivedChars_i] = '\0';
+      }
+    }
+  }
+
+  
+
 
 //  if (Serial.available())
 //    fona.write(Serial.read());
@@ -246,6 +270,13 @@ void loop() {
 //    Serial.write(fona.read());
 
    validTouchDetected = false;
+}
+
+void parseSerialInput() {
+  if(receivedChars[0] == 'R' && receivedChars[1] == 'I' && receivedChars[2] == 'N' && receivedChars[3] == 'G')
+    Serial.println("Incoming Call");
+  receivedChars[0] = '\0';
+  receivedChars_i = 0;
 }
 
 void disableNumpad() {
