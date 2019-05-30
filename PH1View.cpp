@@ -39,6 +39,10 @@ void PH1View::clearTouch(){
 void PH1View::handleInput(char*) {
   
 }
+
+void PH1View::redraw() {
+  
+}
 //
 //void PH1View::flushSerial() {
 //  while (fonaSerial->available())

@@ -36,10 +36,10 @@ class PH1View {
 
     virtual void handleInput(char*);
 
+    virtual void redraw();
+
     bool needOSKeyboard;
-    bool needOSKeyboardClosed;
     bool needOSNumpad;
-    bool needOSNumpadClosed;
     bool needNewViewLoaded;
     PH1View * newView;
     char* title;

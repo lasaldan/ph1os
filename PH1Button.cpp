@@ -16,7 +16,7 @@ void PH1Button::initButton( Adafruit_GFX *gfx, int16_t x1, int16_t y1, uint16_t 
   _textcolor = textcolor;
   _textsize = textsize;
   _gfx = gfx;
-  strncpy(_label, label, 20);
+  strncpy(_label, label, 29);
 }
 
 void PH1Button::drawButton(boolean inverted) {

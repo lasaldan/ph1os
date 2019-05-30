@@ -22,6 +22,9 @@
 #include "includes/platform/FONAPlatform.h"
 
 
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+
 
 #define FONA800L 1
 #define FONA800H 6
@@ -72,6 +75,7 @@ class Adafruit_FONA : public FONAStreamType {
   Adafruit_FONA(int8_t r);
   boolean begin(FONAStreamType &port);
   uint8_t type();
+  void setTFT(Adafruit_ILI9341*);
 
   // Stream
   int available(void);
@@ -240,6 +244,8 @@ class Adafruit_FONA : public FONAStreamType {
   static void onIncomingCall();
 
   FONAStreamType *mySerial;
+  
+  Adafruit_ILI9341* tft;
 };
 
 class Adafruit_FONA_3G : public Adafruit_FONA {

@@ -32,7 +32,7 @@ class PH1Button {
     uint16_t      _w, _h;
     uint8_t       _textsize;
     uint16_t      _outlinecolor, _fillcolor, _textcolor;
-    char          _label[21];
+    char          _label[30];
     
     boolean currstate, laststate;
 };

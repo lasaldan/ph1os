@@ -53,11 +53,11 @@ void CallView::clearTouch() {
 }
 
 void CallView::handleNextButton() {
-  fonaSS->println("ATH");
+  fonaSS->println("AT+CHUP");
 }
 
 void CallView::handlePrevButton() {
-  fonaSS->println("ATH");
+  fonaSS->println("AT+CHUP");
   newView = new PhoneView();
   needNewViewLoaded = true;
 }

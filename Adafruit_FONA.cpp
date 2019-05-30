@@ -46,6 +46,10 @@ uint8_t Adafruit_FONA::type(void) {
   return _type;
 }
 
+void Adafruit_FONA::setTFT(Adafruit_ILI9341* _tft) {
+  tft = _tft;
+}
+
 boolean Adafruit_FONA::begin(Stream &port) {
   mySerial = &port;
 
@@ -97,14 +101,12 @@ boolean Adafruit_FONA::begin(Stream &port) {
   delay(100);
   flushInput();
 
-
   DEBUG_PRINT(F("\t---> ")); DEBUG_PRINTLN("ATI");
 
   mySerial->println("ATI");
   readline(500, true);
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
-
 
 
   if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
@@ -129,7 +131,6 @@ boolean Adafruit_FONA::begin(Stream &port) {
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
 
-
     if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800H")) != 0) {
       _type = FONA800H;
     }
@@ -138,7 +139,7 @@ boolean Adafruit_FONA::begin(Stream &port) {
 #if defined(FONA_PREF_SMS_STORAGE)
     sendCheckReply(F("AT+CPMS=" FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE), ok_reply);
 #endif
-
+  
   return true;
 }
 

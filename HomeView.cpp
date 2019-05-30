@@ -28,9 +28,27 @@ void HomeView::onEnter() {
 void HomeView::onExit() {
 }
 
+void HomeView::redraw() {
+  
+  buttons[0].drawButton();
+  buttons[1].drawButton();
+  buttons[2].drawButton();
+  buttons[3].drawButton();
+  buttons[4].drawButton();
+  buttons[5].drawButton();
+}
+
 void HomeView::handleTouch(TSPoint p) {
   if(buttons[0].contains(p.x, p.y)) {
     newView = new PhoneView();
+    needNewViewLoaded = true;
+  }  
+  if(buttons[1].contains(p.x, p.y)) {
+    newView = new TextView();
+    needNewViewLoaded = true;
+  }
+  if(buttons[4].contains(p.x, p.y)) {
+    newView = new BookView();
     needNewViewLoaded = true;
   }
     
